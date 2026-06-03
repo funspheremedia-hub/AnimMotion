@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>AniHub - Watch Video</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0A0A0F; color: white; font-family: 'Inter', system-ui, sans-serif; padding: 0; min-height: 100vh; }
+        .container { max-width: 100%; margin: 0 auto; }
+        .back-btn { background: #1E1E2A; border: none; color: white; padding: 12px 20px; border-radius: 40px; font-size: 14px; cursor: pointer; margin: 15px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+        .back-btn:hover { background: #A855F7; }
+        .video-container { background: #000; position: relative; width: 100%; }
+        #player { width: 100%; aspect-ratio: 16 / 9; }
+        .video-info { background: #1E1E2A; padding: 20px; border-radius: 20px; margin: 15px; }
+        .video-title { font-size: 22px; font-weight: bold; margin-bottom: 8px; }
+        .season-ep { color: #A855F7; margin-bottom: 15px; font-size: 14px; }
+        .audio-select { width: 100%; padding: 12px; background: #2a2a36; color: white; border: 1px solid #3a3a4a; border-radius: 12px; margin: 15px 0; font-size: 14px; cursor: pointer; }
+        .download-section { margin: 15px 0; }
+        .download-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #A855F7, #7c3aed); border: none; color: white; font-size: 15px; font-weight: bold; border-radius: 44px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .download-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .download-progress { font-size: 12px; color: #10b981; margin-top: 5px; text-align: center; }
+        .tabs { display: flex; gap: 10px; margin: 20px 0 15px; overflow-x: auto; }
+        .tab-btn { background: #2a2a36; border: none; color: white; padding: 8px 18px; border-radius: 40px; cursor: pointer; font-size: 13px; white-space: nowrap; }
+        .tab-btn.active { background: #A855F7; }
+        .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; margin-top: 10px; }
+        .ep-card { background: #2a2a36; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .ep-card.active { border-color: #A855F7; }
+        .ep-card:hover { transform: translateY(-3px); background: #3a3a4a; }
+        .ep-thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #1a1a24; }
+        .ep-info { padding: 8px; text-align: center; }
+        .ep-number { font-size: 11px; color: #A855F7; font-weight: bold; }
+        .ep-title { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+        .ad-notice { background: rgba(168,85,247,0.2); padding: 8px; border-radius: 8px; font-size: 11px; text-align: center; margin-top: 10px; }
+        .toast { position: fixed; bottom: 100px; left: 20px; right: 20px; background: #A855F7; padding: 12px; border-radius: 30px; text-align: center; z-index: 1000; animation: fadeOut 3s forwards; }
+        @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
+        @media (max-width: 600px) { .ep-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } }
+        @media (orientation: landscape) and (max-height: 500px) { .video-info { display: none; } .back-btn { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); margin: 0; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back to Home</button>
+        <div class="video-container"><video id="player" controls playsinline></video></div>
+        <div class="video-info">
+            <div class="video-title" id="video-title">Loading...</div>
+            <div class="season-ep" id="season-ep"></div>
+            <select id="audio-select" class="audio-select">
+                <option value="jp">🇯🇵 Japanese (Sub)</option>
+                <option value="en">🇺🇸 English (Dub)</option>
+                <option value="bn">🇧🇩 Bangla (Dub)</option>
+            </select>
+            <div class="download-section">
+                <button id="download-btn" class="download-btn"><i class="fas fa-download"></i> Download Episode (Watch 5 Ads)</button>
+                <div id="download-progress" class="download-progress"></div>
+            </div>
+            <div class="tabs" id="season-tabs"></div>
+            <div class="ep-grid" id="ep-grid"></div>
+            <div class="ad-notice"><i class="fas fa-ad"></i> Ads may appear during playback to support free streaming</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        const adsterraLink = "https://www.effectivecpmnetwork.com/ukktvq1w9?key=d357dcf3ca1cb0c29e2aba9557b23453";
+        let adPending = false;
+        
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const title = decodeURIComponent(urlParams.get('title') || 'Solo Leveling');
+        const season = parseInt(urlParams.get('season') || '1');
+        const episode = parseInt(urlParams.get('episode') || '1');
+        
+        function goBack() {
+            window.location.href = 'index.html';
+        }
+        
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Content Database
+        function getThumbnail(title, ep) {
+            let hash = 0;
+            for(let i = 0; i < title.length; i++) hash += title.charCodeAt(i);
+            return `https://picsum.photos/id/${(hash + ep) % 100}/300/200`;
+        }
+        
+        const contentDB = {};
+        const allTitles = [
+            "Solo Leveling", "Jujutsu Kaisen", "Attack on Titan", "Demon Slayer", 
+            "One Piece", "Mashle", "Frieren", "Chainsaw Man", "Naruto", "Bleach",
+            "Suzume", "Your Name", "Weathering With You", "Demon Slayer: Mugen Train",
+            "Alice in Borderland", "Wednesday", "Stranger Things", "The Witcher"
+        ];
+        
+        allTitles.forEach(t => {
+            const episodes = [];
+            for(let i = 1; i <= 12; i++) {
+                episodes.push({ num: i, title: `Episode ${i}`, thumbnail: getThumbnail(t, i) });
+            }
+            contentDB[t] = {
+                seasons: { 1: episodes, 2: t === "Solo Leveling" ? [1,2,3].map(i => ({num: i, title: `Episode ${i+12}`, thumbnail: getThumbnail(t, i+12)})) : [] },
+                downloadUrls: { 1: {}, 2: {} },
+                streamUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
+            };
+            for(let s = 1; s <= 2; s++) {
+                if(contentDB[t].seasons[s] && contentDB[t].seasons[s].length) {
+                    for(let ep of contentDB[t].seasons[s]) {
+                        contentDB[t].downloadUrls[s][ep.num] = `https://dl.anihub.sample/${encodeURIComponent(t)}_S${s}E${ep.num}.mp4`;
+                    }
+                }
+            }
+        });
+        
+        let currentTitle = title;
+        let currentSeason = season;
+        let currentEpisode = episode;
+        let plyrPlayer = null;
+        let hlsInstance = null;
+        let downloadAdCount = 0;
+        let downloadRequiredAds = 5;
+        let isDownloadReady = false;
+        
+        document.getElementById('video-title').innerText = currentTitle;
+        document.getElementById('season-ep').innerHTML = `<i class="fas fa-calendar"></i> Season ${currentSeason} • Episode ${currentEpisode}`;
+        
+        function initPlayer() {
+            if(plyrPlayer) plyrPlayer.destroy();
+            const videoEl = document.getElementById('player');
+            plyrPlayer = new Plyr(videoEl);
+            if(hlsInstance) hlsInstance.destroy();
+            hlsInstance = new Hls();
+        }
+        
+        function loadStream(url) {
+            const video = document.getElementById('player');
+            if(Hls.isSupported()) {
+                if(hlsInstance) hlsInstance.destroy();
+                hlsInstance = new Hls();
+                hlsInstance.loadSource(url);
+                hlsInstance.attachMedia(video);
+            } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = url;
+            } else {
+                video.src = url;
+            }
+        }
+        
+        function renderEpisodesAndSeasons() {
+            const data = contentDB[currentTitle];
+            if(!data) return;
+            
+            const seasons = Object.keys(data.seasons).filter(s => data.seasons[s] && data.seasons[s].length).map(Number);
+            const seasonTabsHtml = seasons.map(s => 
+                `<button class="tab-btn ${s === currentSeason ? 'active' : ''}" data-season="${s}">Season ${s}</button>`
+            ).join('');
+            document.getElementById('season-tabs').innerHTML = seasonTabsHtml;
+            
+            document.querySelectorAll('#season-tabs .tab-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const newSeason = parseInt(btn.dataset.season);
+                    openEpisodeWithAd(currentTitle, newSeason, 1);
+                });
+            });
+            
+            const episodes = data.seasons[currentSeason] || [];
+            const epGridHtml = episodes.map(ep => `
+                <div class="ep-card ${ep.num === currentEpisode ? 'active' : ''}" data-ep="${ep.num}">
+                    <img class="ep-thumb" src="${ep.thumbnail}" alt="Episode ${ep.num}">
+                    <div class="ep-info">
+                        <div class="ep-number">EP ${ep.num}</div>
+                        <div class="ep-title">${ep.title}</div>
+                    </div>
+                </div>
+            `).join('');
+            document.getElementById('ep-grid').innerHTML = epGridHtml;
+            
+            document.querySelectorAll('.ep-card').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    const newEp = parseInt(card.dataset.ep);
+                    if(newEp !== currentEpisode) {
+                        openEpisodeWithAd(currentTitle, currentSeason, newEp);
+                    }
+                });
+            });
+            
+            loadStream(data.streamUrl);
+        }
+        
+        function openEpisodeWithAd(title, season, ep) {
+            window.location.href = `play.html?title=${encodeURIComponent(title)}&season=${season}&episode=${ep}`;
+        }
+        
+        function updateDownloadButton() {
+            const btn = document.getElementById('download-btn');
+            const progressDiv = document.getElementById('download-progress');
+            
+            if (isDownloadReady) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-download"></i> Download Episode (Ready!)';
+                progressDiv.innerHTML = '✅ Download ready! Click to download.';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fas fa-ad"></i> Download Episode (Watch ${downloadRequiredAds - downloadAdCount} more ads)`;
+                progressDiv.innerHTML = `📺 Ad progress: ${downloadAdCount}/${downloadRequiredAds} ads watched`;
+            }
+        }
+        
+        function showDownloadAd() {
+            if (downloadAdCount >= downloadRequiredAds) {
+                isDownloadReady = true;
+                updateDownloadButton();
+                showToast("✅ You've watched all required ads! Now you can download.");
+                return;
+            }
+            
+            showToast(`📺 Watching ad ${downloadAdCount + 1}/${downloadRequiredAds}...`);
+            const adWindow = window.open(adsterraLink, '_blank');
+            
+            const checkInterval = setInterval(() => {
+                if (adWindow && adWindow.closed) {
+                    clearInterval(checkInterval);
+                    downloadAdCount++;
+                    if (downloadAdCount >= downloadRequiredAds) {
+                        isDownloadReady = true;
+                        showToast("✅ All ads completed! Download is now available.");
+                    } else {
+                        showToast(`✅ Ad ${downloadAdCount} completed! ${downloadRequiredAds - downloadAdCount} more to go.`);
+                    }
+                    updateDownloadButton();
+                }
+            }, 500);
+        }
+        
+        function setupDownload() {
+            const downloadBtn = document.getElementById('download-btn');
+            updateDownloadButton();
+            
+            downloadBtn.onclick = () => {
+                const data = contentDB[currentTitle];
+                const downloadUrl = data?.downloadUrls[currentSeason]?.[currentEpisode];
+                
+                if (!downloadUrl) {
+                    alert("Download link not available.");
+                    return;
+                }
+                
+                if (isDownloadReady) {
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = '';
+                    link.target = '_blank';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showToast("✅ Download started!");
+                    downloadAdCount = 0;
+                    isDownloadReady = false;
+                    updateDownloadButton();
+                } else {
+                    showDownloadAd();
+                }
+            };
+        }
+        
+        document.getElementById('audio-select').addEventListener('change', (e) => {
+            showToast(`🎧 Audio changed to ${e.target.options[e.target.selectedIndex].text}`);
+        });
+        
+        initPlayer();
+        renderEpisodesAndSeasons();
+        setupDownload();
+        
+        window.goBack = goBack;
+        window.openEpisodeWithAd = openEpisodeWithAd;
+    </script>
+</body>
+</html>

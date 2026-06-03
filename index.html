@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>AniHub Premium | Watch Anime, Movies & Series</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+    
+   <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --accent: #A855F7;
+            --accent-hover: #c084fc;
+            --bg: #0A0A0F;
+            --card-bg: #1E1E2A;
+            --card-hover: #2a2a36;
+            --surface: #12121A;
+            --text: #F3F4F6;
+            --text-secondary: #9CA3AF;
+            --border: #2d2d3a;
+            --transition: all 0.2s ease-in-out;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            padding-bottom: 85px;
+            line-height: 1.5;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--surface);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+
+        .header {
+            padding: 20px 20px 12px;
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent) 0%, #E879F9 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+        }
+        .header span {
+            font-size: 14px;
+            background: none;
+            -webkit-background-clip: unset;
+            background-clip: unset;
+            color: var(--text-secondary);
+            font-weight: normal;
+        }
+
+        .search-container {
+            padding: 12px 20px;
+        }
+        .search-box {
+            display: flex;
+            background: var(--card-bg);
+            border-radius: 60px;
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+        }
+        .search-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(168,85,247,0.2);
+        }
+        .search-box i {
+            color: var(--text-secondary);
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        .search-box input {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 16px;
+            width: 100%;
+            outline: none;
+        }
+        .search-box input::placeholder {
+            color: #5c5c70;
+        }
+
+        .section-title {
+            padding: 20px 20px 12px;
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-title i {
+            color: var(--accent);
+            font-size: 20px;
+        }
+
+        .scroll-grid {
+            display: flex;
+            overflow-x: auto;
+            gap: 16px;
+            padding: 0 20px 20px;
+            scroll-behavior: smooth;
+        }
+        .scroll-grid::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .vertical-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+            padding: 0 20px 30px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+        .card:hover {
+            transform: translateY(-6px);
+            border-color: var(--accent);
+            background: var(--card-hover);
+            box-shadow: 0 20px 25px -12px rgba(0,0,0,0.5);
+        }
+        .card img {
+            width: 100%;
+            height: 210px;
+            object-fit: cover;
+            display: block;
+        }
+        .card p {
+            padding: 12px 8px;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card .meta {
+            font-size: 10px;
+            color: var(--accent);
+            text-align: center;
+            margin-top: -8px;
+            margin-bottom: 8px;
+        }
+
+        @media (max-width: 550px) {
+            .vertical-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 12px;
+            }
+            .vertical-grid .card img {
+                height: 160px;
+            }
+            .card { flex: 0 0 130px; }
+            .card img { height: 180px; }
+        }
+        
+        @media (min-width: 551px) and (max-width: 768px) {
+            .vertical-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: rgba(18, 18, 26, 0.95);
+            backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 10px;
+            border-top: 1px solid var(--border);
+            z-index: 1000;
+        }
+        .nav-item {
+            cursor: pointer;
+            text-align: center;
+            font-size: 12px;
+            transition: var(--transition);
+            color: var(--text-secondary);
+            padding: 4px 0;
+            border-radius: 30px;
+            width: 20%;
+        }
+        .nav-item i {
+            font-size: 22px;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .nav-item.active, .nav-item:hover {
+            color: var(--accent);
+            background: rgba(168,85,247,0.1);
+        }
+
+        .empty-message {
+            padding: 40px 20px;
+            color: var(--text-secondary);
+            text-align: center;
+            grid-column: 1 / -1;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+        .card {
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .page-indicator {
+            padding: 5px 20px;
+            font-size: 14px;
+            color: var(--accent);
+            font-weight: 500;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #A855F7, #7c3aed);
+            padding: 12px 20px;
+            border-radius: 50px;
+            text-align: center;
+            z-index: 2000;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease, fadeOut 3s ease 2.5s forwards;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; visibility: hidden; }
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 3000;
+        }
+        .modal-content {
+            background: #1E1E2A;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 300px;
+        }
+        .modal-content button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #A855F7;
+            border: none;
+            border-radius: 40px;
+            color: white;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<!-- HOME PAGE -->
+<div id="home-page">
+    <div class="header">
+        AniHub <span>PREMIUM</span>
+    </div>
+    <div class="search-container">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input" placeholder="Search anime, movies, web series..." autocomplete="off">
+        </div>
+    </div>
+    
+    <div class="page-indicator" id="page-indicator">🏠 All Content</div>
+
+    <div id="continue-section">
+        <div class="section-title"><i class="fas fa-history"></i> Continue Watching</div>
+        <div class="scroll-grid" id="continue-list"></div>
+    </div>
+
+    <div id="latest-section">
+        <div class="section-title"><i class="fas fa-clock"></i> Latest Episodes</div>
+        <div class="scroll-grid" id="latest-episodes"></div>
+    </div>
+
+    <div id="anime-section">
+        <div class="section-title"><i class="fas fa-fire"></i> Trending Anime</div>
+        <div class="scroll-grid" id="anime-list"></div>
+    </div>
+
+    <div id="movies-section">
+        <div class="section-title"><i class="fas fa-film"></i> Popular Movies</div>
+        <div class="scroll-grid" id="movie-list"></div>
+    </div>
+
+    <div id="series-section">
+        <div class="section-title"><i class="fas fa-layer-group"></i> Web Series</div>
+        <div class="scroll-grid" id="series-list"></div>
+    </div>
+</div>
+
+<!-- CATEGORY PAGES -->
+<div id="anime-page" style="display: none;">
+    <div class="header">
+        AniHub <span>PREMIUM</span>
+    </div>
+    <div class="search-container">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input-anime" placeholder="Search anime..." autocomplete="off">
+        </div>
+    </div>
+    <div class="page-indicator">🎬 Trending Anime</div>
+    <div class="vertical-grid" id="anime-vertical-list"></div>
+</div>
+
+<div id="movie-page" style="display: none;">
+    <div class="header">
+        AniHub <span>PREMIUM</span>
+    </div>
+    <div class="search-container">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input-movie" placeholder="Search movies..." autocomplete="off">
+        </div>
+    </div>
+    <div class="page-indicator">🎥 Popular Movies</div>
+    <div class="vertical-grid" id="movie-vertical-list"></div>
+</div>
+
+<div id="series-page" style="display: none;">
+    <div class="header">
+        AniHub <span>PREMIUM</span>
+    </div>
+    <div class="search-container">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="search-input-series" placeholder="Search web series..." autocomplete="off">
+        </div>
+    </div>
+    <div class="page-indicator">📺 Web Series</div>
+    <div class="vertical-grid" id="series-vertical-list"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+    <div class="nav-item" data-page="home"><i class="fas fa-home"></i>Home</div>
+    <div class="nav-item" data-page="anime"><i class="fas fa-tv"></i>Anime</div>
+    <div class="nav-item" data-page="movie"><i class="fas fa-film"></i>Movie</div>
+    <div class="nav-item" data-page="series"><i class="fas fa-layer-group"></i>Series</div>
+</div>
+
+<script>
+    // ======================= FIREBASE CONFIGURATION =======================
+    const firebaseConfig = {
+        apiKey: "AIzaSyCeXco4XmF5U2iopW7JRsNTsOhLMQ37rU4",
+        authDomain: "anihub-c2538.firebaseapp.com",
+        databaseURL: "https://anihub-c2538-default-rtdb.firebaseio.com",
+        projectId: "anihub-c2538",
+        storageBucket: "anihub-c2538.firebasestorage.app",
+        messagingSenderId: "86405113963",
+        appId: "1:86405113963:web:f7a4e9fd383b410d27292e",
+        measurementId: "G-QJS8FZXQD9"
+    };
+    
+    let database = null;
+    let firebaseInitialized = false;
+    
+    try {
+        if (firebaseConfig.apiKey && firebaseConfig.apiKey !== "YOUR_API_KEY") {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            firebaseInitialized = true;
+            console.log("✅ Firebase initialized");
+        }
+    } catch(e) {
+        console.log("Firebase error:", e);
+    }
+    
+    // ======================= ADSTERRA CONFIG =======================
+    const adsterraLink = "https://www.effectivecpmnetwork.com/ukktvq1w9?key=d357dcf3ca1cb0c29e2aba9557b23453";
+    let adPending = false;
+    let pendingAction = null;
+    
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<i class="fas fa-ad"></i> ${message}`;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+    
+    function showPopupWarning() {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <i class="fas fa-exclamation-triangle" style="font-size: 40px; color: #A855F7;"></i>
+                <h3 style="margin: 15px 0;">Popup Blocked!</h3>
+                <p>Please allow popups for this site to watch videos.</p>
+                <button onclick="this.parentElement.parentElement.remove()">OK, I'll allow</button>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    function openAdAndExecute(callback) {
+        if (adPending) {
+            showToast("Please wait, ad in progress...");
+            return;
+        }
+        
+        pendingAction = callback;
+        adPending = true;
+        
+        showToast("📺 Opening ad... Please watch to continue");
+        
+        // Try to open ad
+        const adWindow = window.open(adsterraLink, '_blank');
+        
+        if (!adWindow || adWindow.closed || typeof adWindow.closed === 'undefined') {
+            // Popup blocked
+            showPopupWarning();
+            adPending = false;
+            return;
+        }
+        
+        // Increment ad view count
+        let totalAds = parseInt(localStorage.getItem('total_ad_views') || '0');
+        totalAds++;
+        localStorage.setItem('total_ad_views', totalAds);
+        
+        // Check when user returns from ad
+        const checkInterval = setInterval(() => {
+            if (adWindow.closed) {
+                clearInterval(checkInterval);
+                if (pendingAction) {
+                    showToast("✅ Ad completed! Continuing...");
+                    pendingAction();
+                    pendingAction = null;
+                }
+                setTimeout(() => { adPending = false; }, 500);
+            }
+        }, 500);
+        
+        // Fallback after 15 seconds
+        setTimeout(() => {
+            if (adPending && pendingAction) {
+                clearInterval(checkInterval);
+                if (!adWindow.closed) {
+                    adWindow.close();
+                }
+                showToast("✅ Continuing...");
+                pendingAction();
+                pendingAction = null;
+                setTimeout(() => { adPending = false; }, 500);
+            }
+        }, 15000);
+    }
+    
+    // ======================= DEMO DATA =======================
+    const trendingAnime = ["Solo Leveling", "Jujutsu Kaisen", "Attack on Titan", "Demon Slayer", "One Piece", "Mashle", "Frieren", "Chainsaw Man", "Naruto", "Bleach", "Death Note", "Tokyo Revengers"];
+    const popularMovies = ["Suzume", "Your Name", "Weathering With You", "Demon Slayer: Mugen Train", "Jujutsu Kaisen 0", "The First Slam Dunk", "Spirited Away", "Howl's Moving Castle", "Princess Mononoke", "A Silent Voice"];
+    const webSeries = ["Alice in Borderland", "One Piece Live Action", "Wednesday", "Stranger Things", "The Witcher", "Invincible", "Dark", "Money Heist", "Squid Game", "Arcane"];
+    
+    const latestEpisodesData = [
+        { title: "Solo Leveling", ep: 12 },
+        { title: "Jujutsu Kaisen", ep: 24 },
+        { title: "Frieren", ep: 28 },
+        { title: "Demon Slayer", ep: 8 },
+        { title: "Suzume", ep: 1 },
+        { title: "Attack on Titan", ep: 87 }
+    ];
+    
+    const posters = [
+        "https://picsum.photos/id/104/300/450", "https://picsum.photos/id/106/300/450", "https://picsum.photos/id/107/300/450",
+        "https://picsum.photos/id/116/300/450", "https://picsum.photos/id/119/300/450", "https://picsum.photos/id/20/300/450",
+        "https://picsum.photos/id/22/300/450", "https://picsum.photos/id/26/300/450"
+    ];
+    
+    function getPosterForTitle(title) {
+        let hash = 0;
+        for(let i = 0; i < title.length; i++) hash += title.charCodeAt(i);
+        return posters[hash % posters.length];
+    }
+    
+    // ======================= CONTINUE WATCHING =======================
+    let continueWatching = JSON.parse(localStorage.getItem('continueWatching')) || [];
+    
+    function saveContinueWatching(title, season, ep) {
+        const existingIndex = continueWatching.findIndex(item => item.title === title);
+        const entry = { title, season, episode: ep, timestamp: Date.now() };
+        if(existingIndex !== -1) continueWatching.splice(existingIndex, 1);
+        continueWatching.unshift(entry);
+        if(continueWatching.length > 12) continueWatching.pop();
+        localStorage.setItem('continueWatching', JSON.stringify(continueWatching));
+        if(currentPage === 'home') renderContinueWatching();
+    }
+    
+    function renderContinueWatching() {
+        const container = document.getElementById('continue-list');
+        if(!container) return;
+        if(continueWatching.length === 0) {
+            container.innerHTML = '<div class="empty-message">✨ No history. Start watching!</div>';
+            return;
+        }
+        container.innerHTML = continueWatching.map(item => `
+            <div class="card" onclick="handleCardClickWithAd('${item.title.replace(/'/g, "\\'")}', ${item.season}, ${item.episode})">
+                <img src="${getPosterForTitle(item.title)}" alt="${item.title}">
+                <p>${item.title}</p>
+                <div class="meta">S${item.season} • Ep${item.episode}</div>
+            </div>
+        `).join('');
+    }
+    
+    // ======================= NAVIGATION =======================
+    function redirectToPlayer(title, season, episode) {
+        saveContinueWatching(title, season, episode);
+        window.location.href = `play.html?title=${encodeURIComponent(title)}&season=${season}&episode=${episode}`;
+    }
+    
+    window.handleCardClickWithAd = function(title, season, episode) {
+        openAdAndExecute(() => {
+            redirectToPlayer(title, season, episode);
+        });
+    };
+    
+    function handleNavClickWithAd(page) {
+        if (currentPage === page) {
+            return;
+        }
+        openAdAndExecute(() => {
+            navigateTo(page);
+        });
+    }
+    
+    // ======================= PAGE RENDERING =======================
+    let currentPage = 'home';
+    let animeData = [...trendingAnime];
+    let moviesData = [...popularMovies];
+    let seriesData = [...webSeries];
+    
+    if (firebaseInitialized && database) {
+        database.ref('anime').once('value').then(snapshot => {
+            if (snapshot.exists()) {
+                const fbAnime = Object.values(snapshot.val());
+                if (fbAnime.length > 0) animeData = fbAnime;
+                renderHomePage("");
+                renderCategoryPage('anime', "");
+            }
+        }).catch(e => console.log("Firebase error:", e));
+        
+        database.ref('movies').once('value').then(snapshot => {
+            if (snapshot.exists()) {
+                const fbMovies = Object.values(snapshot.val());
+                if (fbMovies.length > 0) moviesData = fbMovies;
+                renderHomePage("");
+                renderCategoryPage('movie', "");
+            }
+        }).catch(e => console.log("Firebase error:", e));
+        
+        database.ref('series').once('value').then(snapshot => {
+            if (snapshot.exists()) {
+                const fbSeries = Object.values(snapshot.val());
+                if (fbSeries.length > 0) seriesData = fbSeries;
+                renderHomePage("");
+                renderCategoryPage('series', "");
+            }
+        }).catch(e => console.log("Firebase error:", e));
+    }
+    
+    function renderHomePage(searchQuery = "") {
+        let animeItems = [...animeData];
+        let movieItems = [...moviesData];
+        let seriesItems = [...seriesData];
+        let latestItems = [...latestEpisodesData];
+        
+        if(searchQuery.trim() !== "") {
+            const query = searchQuery.toLowerCase();
+            animeItems = animeItems.filter(item => item.toLowerCase().includes(query));
+            movieItems = movieItems.filter(item => item.toLowerCase().includes(query));
+            seriesItems = seriesItems.filter(item => item.toLowerCase().includes(query));
+            latestItems = latestItems.filter(item => item.title.toLowerCase().includes(query));
+        }
+        
+        const animeContainer = document.getElementById('anime-list');
+        if(animeContainer) {
+            animeContainer.innerHTML = animeItems.map(item => `
+                <div class="card" onclick="handleCardClickWithAd('${item.replace(/'/g, "\\'")}', 1, 1)">
+                    <img src="${getPosterForTitle(item)}" alt="${item}">
+                    <p>${item}</p>
+                    <div class="meta">Anime</div>
+                </div>
+            `).join('');
+            if(animeItems.length === 0) animeContainer.innerHTML = '<div class="empty-message">No anime found</div>';
+        }
+        
+        const movieContainer = document.getElementById('movie-list');
+        if(movieContainer) {
+            movieContainer.innerHTML = movieItems.map(item => `
+                <div class="card" onclick="handleCardClickWithAd('${item.replace(/'/g, "\\'")}', 1, 1)">
+                    <img src="${getPosterForTitle(item)}" alt="${item}">
+                    <p>${item}</p>
+                    <div class="meta">Movie</div>
+                </div>
+            `).join('');
+            if(movieItems.length === 0) movieContainer.innerHTML = '<div class="empty-message">No movies found</div>';
+        }
+        
+        const seriesContainer = document.getElementById('series-list');
+        if(seriesContainer) {
+            seriesContainer.innerHTML = seriesItems.map(item => `
+                <div class="card" onclick="handleCardClickWithAd('${item.replace(/'/g, "\\'")}', 1, 1)">
+                    <img src="${getPosterForTitle(item)}" alt="${item}">
+                    <p>${item}</p>
+                    <div class="meta">Series</div>
+                </div>
+            `).join('');
+            if(seriesItems.length === 0) seriesContainer.innerHTML = '<div class="empty-message">No series found</div>';
+        }
+        
+        const latestContainer = document.getElementById('latest-episodes');
+        if(latestContainer) {
+            latestContainer.innerHTML = latestItems.map(item => `
+                <div class="card" onclick="handleCardClickWithAd('${item.title.replace(/'/g, "\\'")}', 1, ${item.ep})">
+                    <img src="${getPosterForTitle(item.title)}" alt="${item.title}">
+                    <p>${item.title}</p>
+                    <div class="meta">Ep ${item.ep}</div>
+                </div>
+            `).join('');
+        }
+        
+        renderContinueWatching();
+    }
+    
+    function renderCategoryPage(category, searchQuery = "") {
+        let items = [];
+        let containerId = "";
+        
+        if(category === 'anime') {
+            items = [...animeData];
+            containerId = "anime-vertical-list";
+        } else if(category === 'movie') {
+            items = [...moviesData];
+            containerId = "movie-vertical-list";
+        } else if(category === 'series') {
+            items = [...seriesData];
+            containerId = "series-vertical-list";
+        }
+        
+        if(searchQuery.trim() !== "") {
+            const query = searchQuery.toLowerCase();
+            items = items.filter(item => item.toLowerCase().includes(query));
+        }
+        
+        const container = document.getElementById(containerId);
+        if(container) {
+            if(items.length === 0) {
+                container.innerHTML = '<div class="empty-message">😔 No content found</div>';
+            } else {
+                container.innerHTML = items.map(item => `
+                    <div class="card" onclick="handleCardClickWithAd('${item.replace(/'/g, "\\'")}', 1, 1)">
+                        <img src="${getPosterForTitle(item)}" alt="${item}">
+                        <p>${item}</p>
+                        <div class="meta">${category === 'anime' ? 'Anime' : (category === 'movie' ? 'Movie' : 'Series')}</div>
+                    </div>
+                `).join('');
+            }
+        }
+    }
+    
+    function showPage(pageName) {
+        document.getElementById('home-page').style.display = 'none';
+        document.getElementById('anime-page').style.display = 'none';
+        document.getElementById('movie-page').style.display = 'none';
+        document.getElementById('series-page').style.display = 'none';
+        
+        if(pageName === 'home') {
+            document.getElementById('home-page').style.display = 'block';
+        } else if(pageName === 'anime') {
+            document.getElementById('anime-page').style.display = 'block';
+            renderCategoryPage('anime', "");
+        } else if(pageName === 'movie') {
+            document.getElementById('movie-page').style.display = 'block';
+            renderCategoryPage('movie', "");
+        } else if(pageName === 'series') {
+            document.getElementById('series-page').style.display = 'block';
+            renderCategoryPage('series', "");
+        }
+    }
+    
+    function navigateTo(page) {
+        currentPage = page;
+        showPage(page);
+        
+        document.getElementById('search-input').value = "";
+        if(document.getElementById('search-input-anime')) document.getElementById('search-input-anime').value = "";
+        if(document.getElementById('search-input-movie')) document.getElementById('search-input-movie').value = "";
+        if(document.getElementById('search-input-series')) document.getElementById('search-input-series').value = "";
+        
+        if(page === 'home') {
+            renderHomePage("");
+        } else if(page === 'anime') {
+            renderCategoryPage('anime', "");
+        } else if(page === 'movie') {
+            renderCategoryPage('movie', "");
+        } else if(page === 'series') {
+            renderCategoryPage('series', "");
+        }
+        
+        document.querySelectorAll('.nav-item').forEach(nav => {
+            if(nav.dataset.page === page) {
+                nav.classList.add('active');
+            } else {
+                nav.classList.remove('active');
+            }
+        });
+    }
+    
+    // ======================= EVENT LISTENERS =======================
+    window.onload = () => {
+        navigateTo('home');
+        
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            renderHomePage(e.target.value);
+        });
+        
+        const animeSearch = document.getElementById('search-input-anime');
+        if(animeSearch) {
+            animeSearch.addEventListener('input', (e) => {
+                renderCategoryPage('anime', e.target.value);
+            });
+        }
+        
+        const movieSearch = document.getElementById('search-input-movie');
+        if(movieSearch) {
+            movieSearch.addEventListener('input', (e) => {
+                renderCategoryPage('movie', e.target.value);
+            });
+        }
+        
+        const seriesSearch = document.getElementById('search-input-series');
+        if(seriesSearch) {
+            seriesSearch.addEventListener('input', (e) => {
+                renderCategoryPage('series', e.target.value);
+            });
+        }
+        
+        document.querySelectorAll('.nav-item').forEach(nav => {
+            nav.addEventListener('click', (e) => {
+                const page = nav.dataset.page;
+                handleNavClickWithAd(page);
+            });
+        });
+    };
+    
+    window.handleNavClickWithAd = handleNavClickWithAd;
+</script>
+</body>
+</html>

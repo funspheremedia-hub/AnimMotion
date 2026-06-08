@@ -1,286 +1,1145 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>AniHub - Watch Video</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: #0A0A0F; color: white; font-family: 'Inter', system-ui, sans-serif; padding: 0; min-height: 100vh; }
-        .container { max-width: 100%; margin: 0 auto; }
-        .back-btn { background: #1E1E2A; border: none; color: white; padding: 12px 20px; border-radius: 40px; font-size: 14px; cursor: pointer; margin: 15px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-        .back-btn:hover { background: #A855F7; }
-        .video-container { background: #000; position: relative; width: 100%; }
-        #player { width: 100%; aspect-ratio: 16 / 9; }
-        .video-info { background: #1E1E2A; padding: 20px; border-radius: 20px; margin: 15px; }
-        .video-title { font-size: 22px; font-weight: bold; margin-bottom: 8px; }
-        .season-ep { color: #A855F7; margin-bottom: 15px; font-size: 14px; }
-        .audio-select { width: 100%; padding: 12px; background: #2a2a36; color: white; border: 1px solid #3a3a4a; border-radius: 12px; margin: 15px 0; font-size: 14px; cursor: pointer; }
-        .download-section { margin: 15px 0; }
-        .download-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #A855F7, #7c3aed); border: none; color: white; font-size: 15px; font-weight: bold; border-radius: 44px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .download-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-        .download-progress { font-size: 12px; color: #10b981; margin-top: 5px; text-align: center; }
-        .tabs { display: flex; gap: 10px; margin: 20px 0 15px; overflow-x: auto; }
-        .tab-btn { background: #2a2a36; border: none; color: white; padding: 8px 18px; border-radius: 40px; cursor: pointer; font-size: 13px; white-space: nowrap; }
-        .tab-btn.active { background: #A855F7; }
-        .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; margin-top: 10px; }
-        .ep-card { background: #2a2a36; border-radius: 12px; overflow: hidden; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-        .ep-card.active { border-color: #A855F7; }
-        .ep-card:hover { transform: translateY(-3px); background: #3a3a4a; }
-        .ep-thumb { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; background: #1a1a24; }
-        .ep-info { padding: 8px; text-align: center; }
-        .ep-number { font-size: 11px; color: #A855F7; font-weight: bold; }
-        .ep-title { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
-        .ad-notice { background: rgba(168,85,247,0.2); padding: 8px; border-radius: 8px; font-size: 11px; text-align: center; margin-top: 10px; }
-        .toast { position: fixed; bottom: 100px; left: 20px; right: 20px; background: #A855F7; padding: 12px; border-radius: 30px; text-align: center; z-index: 1000; animation: fadeOut 3s forwards; }
-        @keyframes fadeOut { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; visibility: hidden; } }
-        @media (max-width: 600px) { .ep-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; } }
-        @media (orientation: landscape) and (max-height: 500px) { .video-info { display: none; } .back-btn { position: fixed; top: 10px; left: 10px; background: rgba(0,0,0,0.7); margin: 0; } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AniHub — Pro Stream</title>
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Outfit:wght@400;500;600;700;800&family=Noto+Sans+Bengali:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<style>
+:root {
+  --p:#A855F7; --p2:#7C3AED; --p3:#E879F9;
+  --cyan:#06B6D4; --green:#10B981; --red:#EF4444; --gold:#F59E0B;
+  --bg:#07070F; --bg2:#0D0D1C; --bg3:#111122;
+  --card:#141428; --card2:#1A1A32;
+  --border:rgba(168,85,247,.18); --border2:rgba(168,85,247,.08);
+  --text:#EEEEf8; --muted:#7a7a99;
+  --glow:rgba(168,85,247,.35);
+  --tr:all .22s cubic-bezier(.4,0,.2,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Outfit','Noto Sans Bengali',sans-serif;min-height:100vh;overflow-x:hidden}
+::-webkit-scrollbar{width:4px;height:3px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--p);border-radius:4px}
+
+/* ── TOP BAR ── */
+.topbar{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 16px;
+  background:rgba(13,13,28,.97);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:500;
+}
+.back-btn{
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:14px;cursor:pointer;transition:var(--tr);
+  text-decoration:none;flex-shrink:0;
+}
+.back-btn:hover{background:rgba(168,85,247,.3);border-color:var(--p)}
+.logo{
+  font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;
+  background:linear-gradient(135deg,#A855F7,#E879F9,#06B6D4);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  letter-spacing:1px;cursor:pointer;
+}
+.topbar-mid{flex:1;min-width:0}
+.tb-title{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb-sub{font-size:11px;color:var(--p);margin-top:1px;font-weight:500}
+.topbar-right{display:flex;gap:8px;flex-shrink:0}
+.tib{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);font-size:13px;cursor:pointer;transition:var(--tr);
+}
+.tib:hover{color:var(--p);border-color:var(--p)}
+.tib.liked{color:var(--red);background:rgba(239,68,68,.12);border-color:rgba(239,68,68,.3)}
+.tib.saved{color:var(--gold);background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.3)}
+
+/* ── INIT LOADER (full screen) ── */
+#initLoader{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:18px;z-index:9999;
+}
+#initLoader .spin{
+  width:50px;height:50px;
+  border:3px solid rgba(168,85,247,.2);
+  border-top-color:#A855F7;
+  border-radius:50%;animation:spin .7s linear infinite;
+}
+#initLoader p{font-family:'Rajdhani',sans-serif;font-size:15px;color:var(--muted);font-weight:600}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── PLAYER ── */
+.player-shell{position:relative;width:100%;background:#000;border-bottom:2px solid rgba(168,85,247,.25)}
+.player-shell::after{content:'';position:absolute;inset:0;box-shadow:inset 0 0 0 1px rgba(168,85,247,.2);pointer-events:none;z-index:3}
+.player-ratio{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden}
+#player{width:100%;height:100%;display:block}
+
+/* Plyr theme */
+.plyr--video .plyr__controls{background:linear-gradient(0deg,rgba(0,0,0,.95) 0%,rgba(0,0,0,.4) 65%,transparent 100%);padding:24px 14px 12px}
+.plyr__control--overlaid{background:linear-gradient(135deg,#A855F7,#7C3AED) !important;box-shadow:0 0 28px rgba(168,85,247,.8),0 0 60px rgba(168,85,247,.3) !important;border-radius:50% !important;width:58px !important;height:58px !important;border:2px solid rgba(255,255,255,.25) !important;transition:all .25s !important}
+.plyr__control--overlaid:hover{background:linear-gradient(135deg,#C084FC,#E879F9) !important;transform:scale(1.1) !important;box-shadow:0 0 38px rgba(168,85,247,1) !important}
+.plyr--full-ui input[type=range]{color:#A855F7}
+.plyr__control:hover{background:rgba(168,85,247,.28) !important;color:#fff !important}
+.plyr__control.plyr__tab-focus{box-shadow:0 0 0 3px rgba(168,85,247,.55) !important}
+.plyr--video .plyr__control[aria-expanded=true]{background:#A855F7 !important}
+.plyr__menu__container{background:#1A1A32;border:1px solid rgba(168,85,247,.2)}
+.plyr__menu__container .plyr__control{color:#EEEEf8}
+
+/* Next EP btn */
+.next-ep-btn{
+  position:absolute;bottom:58px;right:12px;z-index:10;
+  background:linear-gradient(135deg,rgba(168,85,247,.9),rgba(124,58,237,.9));
+  color:#fff;font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:700;
+  padding:7px 14px;border-radius:20px;border:none;cursor:pointer;
+  display:flex;align-items:center;gap:5px;
+  backdrop-filter:blur(8px);box-shadow:0 4px 16px rgba(168,85,247,.5);
+  transition:var(--tr);letter-spacing:.3px;
+}
+.next-ep-btn:hover{transform:scale(1.06);box-shadow:0 6px 22px rgba(168,85,247,.7)}
+.next-ep-btn svg{width:14px;height:14px;fill:#fff}
+
+/* Loading overlay inside player */
+.ld-overlay{
+  position:absolute;inset:0;background:rgba(7,7,15,.9);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  z-index:8;transition:opacity .3s;
+}
+.ld-overlay.off{opacity:0;pointer-events:none}
+.spinner{width:46px;height:46px;border:3px solid rgba(168,85,247,.2);border-top-color:#A855F7;border-radius:50%;animation:spin .7s linear infinite}
+.ld-text{font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--muted);font-weight:600}
+
+/* ── SERVER BAR ── */
+.srv-bar{padding:12px 16px 10px;background:var(--bg2);border-bottom:1px solid var(--border);display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.srv-label{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);flex-shrink:0}
+.pills{display:flex;gap:7px;flex-wrap:wrap}
+.pill{display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:50px;background:var(--card);border:1px solid var(--border);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;transition:var(--tr)}
+.pill:hover{border-color:var(--p);color:var(--text)}
+.pill.on{background:rgba(168,85,247,.2);border-color:var(--p);color:#C084FC}
+.pill i{font-size:10px}
+
+/* ── INFO ── */
+.info-wrap{padding:16px 16px 0;background:var(--bg2);display:flex;gap:14px;align-items:flex-start}
+.info-poster{flex-shrink:0;width:72px;height:100px;border-radius:10px;object-fit:cover;border:2px solid var(--border);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.info-right{flex:1;min-width:0;padding-bottom:16px}
+.info-title{font-family:'Rajdhani',sans-serif;font-size:21px;font-weight:700;line-height:1.1;margin-bottom:8px}
+.badge-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.bdg{display:inline-flex;align-items:center;gap:3px;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px}
+.bdg-ep{background:var(--p);color:#fff}
+.bdg-q{background:#1C3A1C;color:#4ADE80;border:1px solid rgba(74,222,128,.25)}
+.bdg-lang{background:var(--card2);color:var(--p);border:1px solid var(--border)}
+.bdg-rat{background:rgba(245,158,11,.15);color:var(--gold);border:1px solid rgba(245,158,11,.25)}
+.bdg-genre{background:rgba(6,182,212,.14);color:var(--cyan);border:1px solid rgba(6,182,212,.22)}
+.info-desc{font-size:12px;color:var(--muted);line-height:1.65;margin-top:6px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.info-desc.open{-webkit-line-clamp:unset;overflow:visible}
+.read-more{font-size:11px;color:var(--p);cursor:pointer;margin-top:4px;display:inline-block;font-weight:600}
+
+/* ── AUDIO ── */
+.audio-wrap{padding:10px 16px 14px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.section-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.audio-row{display:flex;gap:7px;flex-wrap:wrap}
+.audio-btn{display:flex;align-items:center;gap:5px;font-size:11px;padding:5px 13px;border-radius:50px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:var(--tr);font-family:'Outfit',sans-serif}
+.audio-btn:hover{border-color:var(--p);color:var(--text)}
+.audio-btn.active{background:rgba(168,85,247,.2);border-color:var(--p);color:#C084FC}
+
+/* ── EP NAV ── */
+.ep-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--card);border-bottom:1px solid var(--border)}
+.ep-nav-btn{display:flex;align-items:center;gap:7px;padding:9px 16px;border-radius:50px;background:var(--card2);border:1px solid var(--border);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:var(--tr)}
+.ep-nav-btn:hover:not([disabled]){border-color:var(--p);color:var(--p)}
+.ep-nav-btn[disabled]{opacity:.3;cursor:not-allowed}
+.ep-nav-center{text-align:center}
+.epn-num{font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;background:linear-gradient(135deg,var(--p),var(--p3));-webkit-background-clip:text;background-clip:text;color:transparent}
+.epn-lbl{font-size:10px;color:var(--muted);margin-top:1px}
+
+/* ── DOWNLOAD ── */
+.dl-zone{padding:16px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.dl-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.dl-header-left{display:flex;align-items:center;gap:8px}
+.dl-header-left i{color:var(--p);font-size:15px}
+.dl-header-left span{font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700}
+.dl-unlock-lbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.25);padding:3px 10px;border-radius:20px;display:none}
+.dl-unlock-lbl.show{display:block}
+.dl-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.dl-q{padding:9px 4px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:var(--tr);text-align:center}
+.dl-q:hover{border-color:var(--p);color:var(--p)}
+.dl-q.sel{background:linear-gradient(135deg,rgba(168,85,247,.25),rgba(124,58,237,.25));border-color:var(--p);color:#C084FC}
+.dl-q .qlabel{font-size:9px;color:var(--muted);display:block;margin-top:1px;font-weight:500}
+.dl-q.sel .qlabel{color:#C084FC}
+.ad-track{display:flex;align-items:center;gap:6px;margin-bottom:12px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px}
+.ad-track-label{font-size:11px;color:var(--muted);flex:1}
+.ad-dots{display:flex;gap:5px}
+.adot{width:28px;height:6px;border-radius:3px;background:var(--border);transition:var(--tr)}
+.adot.on{background:var(--p);box-shadow:0 0 8px var(--glow)}
+.adot.done{background:var(--green);box-shadow:0 0 6px rgba(16,185,129,.4)}
+.dl-btn{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#555,#333);color:#aaa;font-family:'Rajdhani',sans-serif;font-size:16px;font-weight:700;letter-spacing:.5px;cursor:pointer;transition:var(--tr);display:flex;align-items:center;justify-content:center;gap:8px}
+.dl-btn.unlocked{background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;box-shadow:0 4px 22px var(--glow)}
+.dl-btn.unlocked:hover{transform:translateY(-2px);box-shadow:0 7px 28px var(--glow)}
+.dl-note{text-align:center;font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5}
+
+/* ── SEASONS ── */
+.season-wrap{padding:12px 16px 6px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.stabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
+.stabs::-webkit-scrollbar{display:none}
+.stab{flex-shrink:0;font-family:'Rajdhani',sans-serif;font-size:13px;font-weight:600;background:var(--card);border:1px solid var(--border);color:var(--muted);padding:7px 18px;border-radius:20px;cursor:pointer;transition:var(--tr);letter-spacing:.5px;white-space:nowrap}
+.stab:hover{color:var(--text);border-color:var(--p)}
+.stab.on{background:var(--p);color:#fff;border-color:var(--p);box-shadow:0 0 18px var(--glow)}
+
+/* ── EP GRID ── */
+.ep-section{padding:14px 16px 24px}
+.ep-section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.ep-section-head h3{font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px}
+.ep-section-head h3 i{color:var(--p);font-size:13px}
+.ep-count{font-size:11px;color:var(--muted)}
+.ep-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+@media(min-width:480px){.ep-grid{grid-template-columns:repeat(4,1fr)}}
+@media(min-width:640px){.ep-grid{grid-template-columns:repeat(5,1fr)}}
+.epc{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;transition:var(--tr);position:relative}
+.epc:hover{border-color:var(--p);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.epc.on{border-color:var(--p);background:#1C1040;box-shadow:0 0 16px var(--glow)}
+.epc-top-bar{position:absolute;top:0;left:0;right:0;height:2.5px;background:linear-gradient(90deg,var(--p),var(--p3));display:none}
+.epc.on .epc-top-bar{display:block}
+.ep-thumb{width:100%;aspect-ratio:16/9;background:var(--bg3);position:relative;overflow:hidden;flex-shrink:0}
+.ep-thumb img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+.epc:hover .ep-thumb img{transform:scale(1.08)}
+.ep-thumb-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1A1A3A,#0F0F25);font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;color:rgba(168,85,247,.25)}
+.ep-num-lbl{position:absolute;bottom:5px;left:5px;background:rgba(0,0,0,.82);color:#fff;font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px}
+.ep-play-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.3);opacity:0;transition:opacity .2s}
+.ep-play-ov svg{width:26px;height:26px;fill:#fff;filter:drop-shadow(0 2px 8px rgba(0,0,0,.7))}
+.epc:hover .ep-play-ov{opacity:1}
+.epc.on .ep-play-ov{opacity:1;background:rgba(168,85,247,.35)}
+.ep-watched-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px rgba(16,185,129,.6);display:none}
+.epc.watched .ep-watched-dot{display:block}
+.ep-info{padding:7px 8px 9px;min-width:0}
+.ep-info-num{font-family:'Rajdhani',sans-serif;font-size:10px;font-weight:700;color:var(--p);letter-spacing:.5px;margin-bottom:2px}
+.epc.on .ep-info-num{color:#C084FC}
+.ep-info-title{font-family:'Rajdhani',sans-serif;font-size:12px;font-weight:600;line-height:1.25;color:var(--text);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ── COMMENTS ── */
+.comments-section{padding:16px 16px 30px;border-top:1px solid var(--border);background:var(--bg2)}
+.comment-input-row{display:flex;gap:10px;margin-bottom:18px;align-items:flex-start}
+.comment-av{width:34px;height:34px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#A855F7,#E879F9);display:flex;align-items:center;justify-content:center;font-size:16px;margin-top:3px}
+.comment-iw{flex:1}
+.comment-input{width:100%;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px 14px;color:var(--text);font-size:13px;font-family:'Outfit',sans-serif;outline:none;resize:none;min-height:40px;max-height:110px;line-height:1.55;transition:border-color .2s}
+.comment-input:focus{border-color:var(--p);box-shadow:0 0 0 3px rgba(168,85,247,.1)}
+.comment-send{display:none;margin-top:7px;width:100%;background:linear-gradient(135deg,var(--p),var(--p2));color:#fff;border:none;border-radius:50px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif;transition:var(--tr)}
+.citem{display:flex;gap:10px;margin-bottom:14px}
+.cav{width:32px;height:32px;border-radius:50%;flex-shrink:0;background:var(--card2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px}
+.cbody{flex:1}
+.cname{font-size:13px;font-weight:700}
+.cname time{font-size:10px;color:var(--muted);font-weight:400;margin-left:7px}
+.ctext{font-size:13px;color:var(--muted);line-height:1.6;margin-top:3px}
+.cacts{display:flex;gap:13px;margin-top:5px}
+.cact{font-size:11px;color:var(--muted);cursor:pointer;display:flex;align-items:center;gap:4px;transition:var(--tr)}
+.cact:hover{color:var(--p)}
+.cact.liked{color:var(--red)}
+
+/* ── SHARE MODAL ── */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;display:none;align-items:center;justify-content:center}
+.modal-bg.show{display:flex;animation:fadein .2s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.modal-box{background:#14142A;border:1px solid var(--border);border-radius:20px;padding:26px 22px;width:calc(100% - 40px);max-width:320px;text-align:center}
+.modal-box h3{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:700;margin-bottom:14px}
+.share-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.share-item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:14px;cursor:pointer;background:var(--card);border:1px solid var(--border);transition:var(--tr);font-size:11px;color:var(--muted)}
+.share-item:hover{border-color:var(--p);color:var(--text);transform:translateY(-3px)}
+.share-item i{font-size:22px}
+.share-item:nth-child(1) i{color:#25D366}
+.share-item:nth-child(2) i{color:#1877F2}
+.share-item:nth-child(3) i{color:var(--p)}
+.share-item:nth-child(4) i{color:var(--cyan)}
+.share-item:nth-child(5) i{color:var(--gold)}
+.share-item:nth-child(6) i{color:var(--muted)}
+.share-link-row{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 12px;margin-bottom:14px}
+.share-link-row span{flex:1;font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.share-link-row button{flex-shrink:0;background:var(--p);border:none;border-radius:6px;color:#fff;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Outfit',sans-serif}
+.modal-close{background:var(--card2);border:1px solid var(--border);border-radius:50px;color:var(--muted);padding:9px 24px;font-size:13px;font-weight:600;cursor:pointer;width:100%;font-family:'Outfit',sans-serif;transition:var(--tr)}
+.modal-close:hover{border-color:var(--p);color:var(--text)}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card2);border:1px solid var(--p);color:var(--text);padding:10px 22px;border-radius:50px;font-size:13px;font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.6);transition:transform .3s cubic-bezier(.175,.885,.32,1.275);z-index:9999;white-space:nowrap;max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+
+.div{height:1px;background:var(--border)}
+
+/* ── ERROR STATE ── */
+.error-state{text-align:center;padding:60px 20px;color:var(--muted)}
+.error-state i{font-size:48px;color:rgba(239,68,68,.3);margin-bottom:16px;display:block}
+.error-state h3{font-size:18px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.error-state p{font-size:13px;line-height:1.7}
+.error-state a{color:var(--p);text-decoration:none;font-weight:600}
+</style>
 </head>
 <body>
-    <div class="container">
-        <button class="back-btn" onclick="goBack()"><i class="fas fa-arrow-left"></i> Back to Home</button>
-        <div class="video-container"><video id="player" controls playsinline></video></div>
-        <div class="video-info">
-            <div class="video-title" id="video-title">Loading...</div>
-            <div class="season-ep" id="season-ep"></div>
-            <select id="audio-select" class="audio-select">
-                <option value="jp">🇯🇵 Japanese (Sub)</option>
-                <option value="en">🇺🇸 English (Dub)</option>
-                <option value="bn">🇧🇩 Bangla (Dub)</option>
-            </select>
-            <div class="download-section">
-                <button id="download-btn" class="download-btn"><i class="fas fa-download"></i> Download Episode (Watch 5 Ads)</button>
-                <div id="download-progress" class="download-progress"></div>
-            </div>
-            <div class="tabs" id="season-tabs"></div>
-            <div class="ep-grid" id="ep-grid"></div>
-            <div class="ad-notice"><i class="fas fa-ad"></i> Ads may appear during playback to support free streaming</div>
-        </div>
-    </div>
 
-    <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-    <script>
-        const adsterraLink = "https://www.effectivecpmnetwork.com/ukktvq1w9?key=d357dcf3ca1cb0c29e2aba9557b23453";
-        let adPending = false;
-        
-        // Get URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const title = decodeURIComponent(urlParams.get('title') || 'Solo Leveling');
-        const season = parseInt(urlParams.get('season') || '1');
-        const episode = parseInt(urlParams.get('episode') || '1');
-        
-        function goBack() {
-            window.location.href = 'index.html';
-        }
-        
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerHTML = `<i class="fas fa-info-circle"></i> ${message}`;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-        
-        // Content Database
-        function getThumbnail(title, ep) {
-            let hash = 0;
-            for(let i = 0; i < title.length; i++) hash += title.charCodeAt(i);
-            return `https://picsum.photos/id/${(hash + ep) % 100}/300/200`;
-        }
-        
-        const contentDB = {};
-        const allTitles = [
-            "Solo Leveling", "Jujutsu Kaisen", "Attack on Titan", "Demon Slayer", 
-            "One Piece", "Mashle", "Frieren", "Chainsaw Man", "Naruto", "Bleach",
-            "Suzume", "Your Name", "Weathering With You", "Demon Slayer: Mugen Train",
-            "Alice in Borderland", "Wednesday", "Stranger Things", "The Witcher"
-        ];
-        
-        allTitles.forEach(t => {
-            const episodes = [];
-            for(let i = 1; i <= 12; i++) {
-                episodes.push({ num: i, title: `Episode ${i}`, thumbnail: getThumbnail(t, i) });
-            }
-            contentDB[t] = {
-                seasons: { 1: episodes, 2: t === "Solo Leveling" ? [1,2,3].map(i => ({num: i, title: `Episode ${i+12}`, thumbnail: getThumbnail(t, i+12)})) : [] },
-                downloadUrls: { 1: {}, 2: {} },
-                streamUrl: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
-            };
-            for(let s = 1; s <= 2; s++) {
-                if(contentDB[t].seasons[s] && contentDB[t].seasons[s].length) {
-                    for(let ep of contentDB[t].seasons[s]) {
-                        contentDB[t].downloadUrls[s][ep.num] = `https://dl.anihub.sample/${encodeURIComponent(t)}_S${s}E${ep.num}.mp4`;
-                    }
-                }
-            }
-        });
-        
-        let currentTitle = title;
-        let currentSeason = season;
-        let currentEpisode = episode;
-        let plyrPlayer = null;
-        let hlsInstance = null;
-        let downloadAdCount = 0;
-        let downloadRequiredAds = 5;
-        let isDownloadReady = false;
-        
-        document.getElementById('video-title').innerText = currentTitle;
-        document.getElementById('season-ep').innerHTML = `<i class="fas fa-calendar"></i> Season ${currentSeason} • Episode ${currentEpisode}`;
-        
-        function initPlayer() {
-            if(plyrPlayer) plyrPlayer.destroy();
-            const videoEl = document.getElementById('player');
-            plyrPlayer = new Plyr(videoEl);
-            if(hlsInstance) hlsInstance.destroy();
-            hlsInstance = new Hls();
-        }
-        
-        function loadStream(url) {
-            const video = document.getElementById('player');
-            if(Hls.isSupported()) {
-                if(hlsInstance) hlsInstance.destroy();
-                hlsInstance = new Hls();
-                hlsInstance.loadSource(url);
-                hlsInstance.attachMedia(video);
-            } else if(video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = url;
-            } else {
-                video.src = url;
-            }
-        }
-        
-        function renderEpisodesAndSeasons() {
-            const data = contentDB[currentTitle];
-            if(!data) return;
-            
-            const seasons = Object.keys(data.seasons).filter(s => data.seasons[s] && data.seasons[s].length).map(Number);
-            const seasonTabsHtml = seasons.map(s => 
-                `<button class="tab-btn ${s === currentSeason ? 'active' : ''}" data-season="${s}">Season ${s}</button>`
-            ).join('');
-            document.getElementById('season-tabs').innerHTML = seasonTabsHtml;
-            
-            document.querySelectorAll('#season-tabs .tab-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const newSeason = parseInt(btn.dataset.season);
-                    openEpisodeWithAd(currentTitle, newSeason, 1);
-                });
-            });
-            
-            const episodes = data.seasons[currentSeason] || [];
-            const epGridHtml = episodes.map(ep => `
-                <div class="ep-card ${ep.num === currentEpisode ? 'active' : ''}" data-ep="${ep.num}">
-                    <img class="ep-thumb" src="${ep.thumbnail}" alt="Episode ${ep.num}">
-                    <div class="ep-info">
-                        <div class="ep-number">EP ${ep.num}</div>
-                        <div class="ep-title">${ep.title}</div>
-                    </div>
-                </div>
-            `).join('');
-            document.getElementById('ep-grid').innerHTML = epGridHtml;
-            
-            document.querySelectorAll('.ep-card').forEach(card => {
-                card.addEventListener('click', (e) => {
-                    const newEp = parseInt(card.dataset.ep);
-                    if(newEp !== currentEpisode) {
-                        openEpisodeWithAd(currentTitle, currentSeason, newEp);
-                    }
-                });
-            });
-            
-            loadStream(data.streamUrl);
-        }
-        
-        function openEpisodeWithAd(title, season, ep) {
-            window.location.href = `play.html?title=${encodeURIComponent(title)}&season=${season}&episode=${ep}`;
-        }
-        
-        function updateDownloadButton() {
-            const btn = document.getElementById('download-btn');
-            const progressDiv = document.getElementById('download-progress');
-            
-            if (isDownloadReady) {
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-download"></i> Download Episode (Ready!)';
-                progressDiv.innerHTML = '✅ Download ready! Click to download.';
-            } else {
-                btn.disabled = false;
-                btn.innerHTML = `<i class="fas fa-ad"></i> Download Episode (Watch ${downloadRequiredAds - downloadAdCount} more ads)`;
-                progressDiv.innerHTML = `📺 Ad progress: ${downloadAdCount}/${downloadRequiredAds} ads watched`;
-            }
-        }
-        
-        function showDownloadAd() {
-            if (downloadAdCount >= downloadRequiredAds) {
-                isDownloadReady = true;
-                updateDownloadButton();
-                showToast("✅ You've watched all required ads! Now you can download.");
-                return;
-            }
-            
-            showToast(`📺 Watching ad ${downloadAdCount + 1}/${downloadRequiredAds}...`);
-            const adWindow = window.open(adsterraLink, '_blank');
-            
-            const checkInterval = setInterval(() => {
-                if (adWindow && adWindow.closed) {
-                    clearInterval(checkInterval);
-                    downloadAdCount++;
-                    if (downloadAdCount >= downloadRequiredAds) {
-                        isDownloadReady = true;
-                        showToast("✅ All ads completed! Download is now available.");
-                    } else {
-                        showToast(`✅ Ad ${downloadAdCount} completed! ${downloadRequiredAds - downloadAdCount} more to go.`);
-                    }
-                    updateDownloadButton();
-                }
-            }, 500);
-        }
-        
-        function setupDownload() {
-            const downloadBtn = document.getElementById('download-btn');
-            updateDownloadButton();
-            
-            downloadBtn.onclick = () => {
-                const data = contentDB[currentTitle];
-                const downloadUrl = data?.downloadUrls[currentSeason]?.[currentEpisode];
-                
-                if (!downloadUrl) {
-                    alert("Download link not available.");
-                    return;
-                }
-                
-                if (isDownloadReady) {
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    link.download = '';
-                    link.target = '_blank';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    showToast("✅ Download started!");
-                    downloadAdCount = 0;
-                    isDownloadReady = false;
-                    updateDownloadButton();
-                } else {
-                    showDownloadAd();
-                }
-            };
-        }
-        
-        document.getElementById('audio-select').addEventListener('change', (e) => {
-            showToast(`🎧 Audio changed to ${e.target.options[e.target.selectedIndex].text}`);
-        });
-        
-        initPlayer();
-        renderEpisodesAndSeasons();
-        setupDownload();
-        
-        window.goBack = goBack;
-        window.openEpisodeWithAd = openEpisodeWithAd;
-    </script>
+<!-- ── FULL PAGE INIT LOADER ── -->
+<div id="initLoader">
+  <div class="spin"></div>
+  <p id="initMsg">Firebase থেকে data লোড হচ্ছে...</p>
+</div>
+
+<!-- ── TOP BAR ── -->
+<div class="topbar">
+  <a class="back-btn" href="index.html"><i class="fas fa-arrow-left"></i></a>
+  <div class="logo" onclick="location.href='index.html'">AniHub</div>
+  <div class="topbar-mid">
+    <div class="tb-title" id="tbTitle">Loading...</div>
+    <div class="tb-sub"   id="tbSub">—</div>
+  </div>
+  <div class="topbar-right">
+    <div class="tib" id="likeBtn" onclick="toggleLike()" title="Like"><i class="far fa-heart"></i></div>
+    <div class="tib" id="wlBtn"   onclick="toggleWL()"   title="Watchlist"><i class="fas fa-plus"></i></div>
+    <div class="tib"              onclick="openShare()"   title="Share"><i class="fas fa-share-alt"></i></div>
+  </div>
+</div>
+
+<!-- ── PLAYER ── -->
+<div class="player-shell">
+  <div class="player-ratio">
+    <video id="player" playsinline></video>
+    <button class="next-ep-btn" id="nextEpBtn" onclick="onNextEp()">
+      <svg viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z"/></svg>
+      Next EP
+    </button>
+    <div class="ld-overlay" id="ldOverlay">
+      <div class="spinner"></div>
+      <div class="ld-text" id="ldText">ভিডিও লোড হচ্ছে...</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── SERVER BAR ── -->
+<div class="srv-bar">
+  <span class="srv-label"><i class="fas fa-server"></i> Server</span>
+  <div class="pills" id="srvPills"></div>
+</div>
+
+<!-- ── INFO ── -->
+<div class="info-wrap">
+  <img class="info-poster" id="infoPoster" src="" alt="" onerror="this.src='https://picsum.photos/id/104/300/450'">
+  <div class="info-right">
+    <div class="info-title" id="infoTitle">—</div>
+    <div class="badge-row"  id="badgeRow"></div>
+    <div class="info-desc"  id="infoDesc"></div>
+    <span class="read-more" id="readMoreBtn" onclick="toggleDesc()">Read more ▾</span>
+  </div>
+</div>
+
+<!-- ── AUDIO ── -->
+<div class="audio-wrap">
+  <div class="section-lbl"><i class="fas fa-volume-up"></i>&nbsp; Audio Language</div>
+  <div class="audio-row" id="audioRow">
+    <button class="audio-btn active" data-track="0">🇯🇵 Japanese</button>
+    <button class="audio-btn" data-track="1">🇬🇧 English</button>
+    <button class="audio-btn" data-track="2">🇧🇩 বাংলা</button>
+    <button class="audio-btn" data-track="3">🇮🇳 Hindi</button>
+    <button class="audio-btn" data-track="4">🇮🇳 Tamil</button>
+  </div>
+</div>
+
+<!-- ── EP NAV ── -->
+<div class="ep-nav">
+  <button class="ep-nav-btn" id="prevBtn" onclick="stepEp(-1)"><i class="fas fa-chevron-left"></i> Prev</button>
+  <div class="ep-nav-center">
+    <div class="epn-num" id="epNavNum">EP 1</div>
+    <div class="epn-lbl">Now Playing</div>
+  </div>
+  <button class="ep-nav-btn" id="nextBtn" onclick="stepEp(1)">Next <i class="fas fa-chevron-right"></i></button>
+</div>
+
+<!-- ── DOWNLOAD ── -->
+<div class="dl-zone">
+  <div class="dl-header">
+    <div class="dl-header-left"><i class="fas fa-download"></i><span>Download Episode</span></div>
+    <div class="dl-unlock-lbl" id="dlUnlockLbl">✓ Unlocked</div>
+  </div>
+  <div class="dl-grid" id="dlGrid">
+    <div class="dl-q sel" data-q="360p">360p<span class="qlabel">~120MB</span></div>
+    <div class="dl-q" data-q="480p">480p<span class="qlabel">~280MB</span></div>
+    <div class="dl-q" data-q="720p">720p<span class="qlabel">~550MB</span></div>
+    <div class="dl-q" data-q="1080p">1080p<span class="qlabel">~1.2GB</span></div>
+  </div>
+  <div class="ad-track">
+    <div class="ad-track-label"><span id="adTrackText">ডাউনলোড করতে ৫টি বিজ্ঞাপন দেখুন</span></div>
+    <div class="ad-dots">
+      <div class="adot" id="d1"></div><div class="adot" id="d2"></div>
+      <div class="adot" id="d3"></div><div class="adot" id="d4"></div>
+      <div class="adot" id="d5"></div>
+    </div>
+  </div>
+  <button class="dl-btn" id="dlBtn">
+    <i class="fas fa-lock"></i>
+    <span id="dlBtnText">Download (০/৫ বিজ্ঞাপন বাকি)</span>
+  </button>
+  <div class="dl-note" id="dlNote">প্রতিটি বিজ্ঞাপন দেখলে ডাউনলোড আনলক হবে</div>
+</div>
+
+<div class="div"></div>
+
+<!-- ── SEASONS ── -->
+<div class="season-wrap">
+  <div class="section-lbl"><i class="fas fa-layer-group"></i>&nbsp; Seasons</div>
+  <div class="stabs" id="seasonTabs"></div>
+</div>
+
+<!-- ── EPISODE GRID ── -->
+<div class="ep-section">
+  <div class="ep-section-head">
+    <h3><i class="fas fa-th-large"></i> Episodes</h3>
+    <span class="ep-count" id="epCount"></span>
+  </div>
+  <div class="ep-grid" id="epGrid"></div>
+</div>
+
+<div class="div"></div>
+
+<!-- ── COMMENTS ── -->
+<div class="comments-section">
+  <div class="section-lbl" style="margin-bottom:14px">
+    <i class="fas fa-comments"></i>&nbsp; Comments
+    <span id="cCount" style="color:var(--muted);font-weight:400;margin-left:4px;"></span>
+  </div>
+  <div class="comment-input-row">
+    <div class="comment-av" id="myAvEl">😊</div>
+    <div class="comment-iw">
+      <textarea class="comment-input" id="cInput" placeholder="মন্তব্য করুন..." rows="1"></textarea>
+      <button class="comment-send" id="cSendBtn" onclick="postComment()">
+        <i class="fas fa-paper-plane"></i> পোস্ট করুন
+      </button>
+    </div>
+  </div>
+  <div id="cList"></div>
+</div>
+
+<!-- ── SHARE MODAL ── -->
+<div class="modal-bg" id="shareModal" onclick="if(event.target===this)closeShare()">
+  <div class="modal-box">
+    <h3>📤 শেয়ার করুন</h3>
+    <div class="share-grid">
+      <div class="share-item" onclick="shareVia('whatsapp')"><i class="fab fa-whatsapp"></i>WhatsApp</div>
+      <div class="share-item" onclick="shareVia('facebook')"><i class="fab fa-facebook"></i>Facebook</div>
+      <div class="share-item" onclick="shareVia('telegram')"><i class="fab fa-telegram"></i>Telegram</div>
+      <div class="share-item" onclick="shareVia('twitter')"><i class="fab fa-twitter"></i>Twitter</div>
+      <div class="share-item" onclick="shareVia('copy')"><i class="fas fa-link"></i>Copy Link</div>
+      <div class="share-item" onclick="shareVia('native')"><i class="fas fa-share-nodes"></i>More</div>
+    </div>
+    <div class="share-link-row">
+      <span id="shareUrl"></span>
+      <button onclick="shareVia('copy')">Copy</button>
+    </div>
+    <button class="modal-close" onclick="closeShare()">Close</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+/* ══════════════════════════════════════════
+   FIREBASE INIT
+══════════════════════════════════════════ */
+const FB_CFG = {
+  apiKey:"AIzaSyCeXco4XmF5U2iopW7JRsNTsOhLMQ37rU4",
+  authDomain:"anihub-c2538.firebaseapp.com",
+  databaseURL:"https://anihub-c2538-default-rtdb.firebaseio.com",
+  projectId:"anihub-c2538",
+  storageBucket:"anihub-c2538.firebasestorage.app",
+  messagingSenderId:"86405113963",
+  appId:"1:86405113963:web:f7a4e9fd383b410d27292e"
+};
+let db = null;
+try {
+  firebase.initializeApp(FB_CFG);
+  db = firebase.database();
+} catch(e) { console.warn('Firebase error:', e); }
+
+/* ══════════════════════════════════════════
+   AD CONFIG (Firebase থেকে override হবে)
+══════════════════════════════════════════ */
+let AD_URL      = "https://www.effectivecpmnetwork.com/ukktvq1w9?key=d357dcf3ca1cb0c29e2aba9557b23453";
+let ADS_REQUIRED = 5;
+
+/* ══════════════════════════════════════════
+   URL PARAMS — index.html থেকে আসা data
+   ?title=Solo+Leveling&type=anime&key=firebase_key&season=0&episode=0
+══════════════════════════════════════════ */
+const QS      = new URLSearchParams(location.search);
+const QS_TITLE  = decodeURIComponent(QS.get('title')   || '');
+const QS_TYPE   = QS.get('type')    || 'anime'; // anime | movies | series
+const QS_KEY    = QS.get('key')     || '';       // Firebase key
+const QS_SEASON = parseInt(QS.get('season')  || 0);
+const QS_EP     = parseInt(QS.get('episode') || 0);
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+let CONFIG  = null;   // loaded from Firebase
+let ST = {
+  season:QS_SEASON, ep:QS_EP, srv:0,
+  quality:"360p", adsWatched:0,
+  hls:null, liked:false, inWL:false,
+  descOpen:false
+};
+
+/* ══════════════════════════════════════════
+   STORAGE
+══════════════════════════════════════════ */
+const S = {
+  get(k,d=null){ try{const v=localStorage.getItem(k);return v!==null?JSON.parse(v):d;}catch{return d;} },
+  set(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch{} }
+};
+
+/* ══════════════════════════════════════════
+   PLYR
+══════════════════════════════════════════ */
+const videoEl = document.getElementById('player');
+const plyr = new Plyr('#player', {
+  controls:['play','rewind','fast-forward','progress','current-time','duration','mute','volume','settings','pip','fullscreen'],
+  settings:['speed'],
+  speed:{ selected:1, options:[0.5,0.75,1,1.25,1.5,2] },
+  ratio:'16:9',
+  keyboard:{ focused:true, global:true },
+});
+
+/* ══════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════ */
+let toastTm;
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(toastTm);
+  toastTm=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+/* ══════════════════════════════════════════
+   FIREBASE CONFIG LOAD (ad settings)
+══════════════════════════════════════════ */
+function loadAdConfig(){
+  if(!db) return Promise.resolve();
+  return db.ref('config/ads').once('value').then(snap=>{
+    if(snap.exists()){
+      const d=snap.val();
+      if(d.url)      AD_URL=d.url;
+      if(d.required) ADS_REQUIRED=d.required;
+    }
+  }).catch(()=>{});
+}
+
+/* ══════════════════════════════════════════
+   MAIN: Firebase থেকে content load করো
+   Admin panel যে Firebase ref এ save করে সেই
+   ref map ব্যবহার করো
+══════════════════════════════════════════ */
+const REF_MAP = { anime:'anime', movie:'movies', series:'series' };
+
+function loadContentFromFirebase(){
+  // type mapping: admin uses 'anime','movie','series' — ref is 'anime','movies','series'
+  const refName = REF_MAP[QS_TYPE] || QS_TYPE;
+
+  // যদি key দেওয়া থাকে সরাসরি সেই key থেকে load করো
+  if(QS_KEY && db){
+    return db.ref(`${refName}/${QS_KEY}`).once('value').then(snap=>{
+      if(snap.exists()){
+        buildConfigFromFirebase(snap.val(), QS_KEY);
+        return;
+      }
+      // key দিয়ে না পেলে title দিয়ে search করো
+      return searchByTitle(refName);
+    });
+  }
+
+  // key নেই — title দিয়ে search
+  if(QS_TITLE && db){
+    return searchByTitle(refName);
+  }
+
+  // Firebase না থাকলে fallback
+  return Promise.resolve(null);
+}
+
+function searchByTitle(refName){
+  return db.ref(refName).once('value').then(snap=>{
+    if(!snap.exists()) return null;
+    let found = null;
+    snap.forEach(child=>{
+      const val = child.val();
+      const title = typeof val==='string' ? val : (val.title||'');
+      if(title.toLowerCase() === QS_TITLE.toLowerCase()){
+        found = { val, key: child.key };
+      }
+    });
+    if(found) buildConfigFromFirebase(found.val, found.key);
+    else return null;
+  });
+}
+
+/* ══════════════════════════════════════════
+   Firebase data → CONFIG object তৈরি করো
+   Admin panel এর data structure match করতে হবে
+══════════════════════════════════════════ */
+function buildConfigFromFirebase(data, key){
+  // data হতে পারে string (পুরনো format) অথবা object (নতুন format)
+  if(typeof data === 'string'){
+    // পুরনো format: শুধু title string ছিল
+    CONFIG = {
+      key,
+      title: data,
+      type: QS_TYPE,
+      genre: '—',
+      rating: '—',
+      year: '',
+      poster: '',
+      desc: '',
+      adLink: AD_URL,
+      adsRequired: ADS_REQUIRED,
+      servers: defaultServers(),
+      seasons: [{ name:'Season 1', episodes:[] }]
+    };
+  } else {
+    // নতুন format: admin panel থেকে full object
+    CONFIG = {
+      key,
+      title:       data.title       || QS_TITLE || '—',
+      type:        QS_TYPE,
+      genre:       data.genre       || '—',
+      rating:      data.rating      || '—',
+      year:        data.year        || '',
+      poster:      data.poster      || '',
+      desc:        data.desc        || '',
+      status:      data.status      || 'ongoing',
+      adLink:      AD_URL,
+      adsRequired: ADS_REQUIRED,
+      servers:     defaultServers(),
+      // Admin এ seasons array save হয়
+      seasons:     normSeasons(data.seasons),
+    };
+  }
+}
+
+function normSeasons(seasons){
+  // Admin থেকে আসা seasons normalize করো
+  if(Array.isArray(seasons) && seasons.length > 0){
+    return seasons.map((s, si) => ({
+      name: s.name || `Season ${si+1}`,
+      episodes: normEpisodes(s.episodes)
+    }));
+  }
+  // seasons না থাকলে empty
+  return [{ name:'Season 1', episodes:[] }];
+}
+
+function normEpisodes(episodes){
+  if(!episodes) return [];
+  // Firebase এ array বা object হতে পারে
+  const arr = Array.isArray(episodes)
+    ? episodes
+    : Object.values(episodes);
+  return arr.map((ep, i) => ({
+    title:  ep.title  || `Episode ${i+1}`,
+    thumb:  ep.thumb  || '',
+    stream: ep.stream || '',
+    dl:     ep.dl     || ep.download || {"360p":"#","480p":"#","720p":"#","1080p":"#"}
+  }));
+}
+
+function defaultServers(){
+  return [
+    { name:"Server 1", icon:"fas fa-play-circle" },
+    { name:"Server 2", icon:"fas fa-tv" },
+    { name:"Server 3", icon:"fas fa-film" },
+    { name:"VidSrc",   icon:"fas fa-rocket" },
+  ];
+}
+
+/* ══════════════════════════════════════════
+   STREAM LOAD
+══════════════════════════════════════════ */
+function loadStream(url){
+  const ov=document.getElementById('ldOverlay');
+  document.getElementById('ldText').textContent='ভিডিও লোড হচ্ছে...';
+  ov.classList.remove('off');
+
+  if(!url || url === '#' || url === ''){
+    ov.classList.add('off');
+    toast('⚠️ এই episode এর stream URL নেই। Admin থেকে যোগ করুন।');
+    return;
+  }
+
+  if(ST.hls){ ST.hls.destroy(); ST.hls=null; }
+
+  if(Hls.isSupported()){
+    const hls=new Hls({ enableWorker:false, lowLatencyMode:true });
+    ST.hls=hls;
+    hls.loadSource(url);
+    hls.attachMedia(videoEl);
+    hls.on(Hls.Events.MANIFEST_PARSED, ()=>{
+      ov.classList.add('off');
+      videoEl.play().catch(()=>{});
+      // audio tracks
+      const tracks=hls.audioTracks;
+      document.querySelectorAll('.audio-btn').forEach(btn=>{
+        btn.onclick=()=>{
+          const idx=parseInt(btn.dataset.track);
+          if(tracks.length>idx) hls.audioTrack=idx;
+          document.querySelectorAll('.audio-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          toast('🎵 '+btn.textContent.trim()+' চালু হয়েছে');
+        };
+      });
+    });
+    hls.on(Hls.Events.ERROR,(e,d)=>{
+      if(d.fatal){ ov.classList.add('off'); toast('⚠️ স্ট্রিম লোড ব্যর্থ — অন্য সার্ভার চেষ্টা করুন'); }
+    });
+  } else if(videoEl.canPlayType('application/vnd.apple.mpegurl')){
+    videoEl.src=url;
+    videoEl.addEventListener('loadedmetadata',()=>{ ov.classList.add('off'); videoEl.play().catch(()=>{}); },{once:true});
+  } else {
+    // Direct video URL (mp4 etc)
+    videoEl.src=url;
+    ov.classList.add('off');
+  }
+
+  setTimeout(()=>ov.classList.add('off'), 10000);
+}
+
+/* ══════════════════════════════════════════
+   UI BUILD
+══════════════════════════════════════════ */
+function buildAll(){
+  buildServers();
+  buildSeasonTabs();
+  buildEpGrid();
+  updateTopUI();
+  updateDlUI();
+  restoreStates();
+
+  const eps=CONFIG.seasons[ST.season]?.episodes||[];
+  const ep =eps[ST.ep];
+  const url=ep?.stream||'';
+  loadStream(url);
+}
+
+function buildServers(){
+  const c=document.getElementById('srvPills'); c.innerHTML='';
+  (CONFIG.servers||[]).forEach((s,i)=>{
+    const d=document.createElement('div');
+    d.className='pill'+(i===ST.srv?' on':'');
+    d.innerHTML=`<i class="${s.icon}"></i> ${s.name}`;
+    d.onclick=()=>switchServer(i);
+    c.appendChild(d);
+  });
+}
+
+function buildSeasonTabs(){
+  const c=document.getElementById('seasonTabs'); c.innerHTML='';
+  (CONFIG.seasons||[]).forEach((s,i)=>{
+    const b=document.createElement('div');
+    b.className='stab'+(i===ST.season?' on':'');
+    b.textContent=s.name;
+    b.onclick=()=>switchSeason(i);
+    c.appendChild(b);
+  });
+}
+
+function buildEpGrid(){
+  const g=document.getElementById('epGrid'); g.innerHTML='';
+  const season=CONFIG.seasons[ST.season];
+  if(!season){ g.innerHTML='<div style="padding:20px;color:var(--muted);font-size:13px;">কোনো episode পাওয়া যায়নি। Admin থেকে episodes যোগ করুন।</div>'; return; }
+  const eps=season.episodes||[];
+  const watched=S.get('watched_'+CONFIG.title,[]);
+  document.getElementById('epCount').textContent=eps.length+' Episodes';
+
+  if(!eps.length){
+    g.innerHTML='<div style="padding:20px;color:var(--muted);font-size:13px;grid-column:1/-1;">এই Season এ কোনো episode নেই। Admin থেকে যোগ করুন।</div>';
+    return;
+  }
+
+  eps.forEach((ep,i)=>{
+    const isOn=i===ST.ep&&ST.season===CONFIG.seasons.indexOf(season);
+    const isDone=watched.includes(`${ST.season}-${i}`)&&!isOn;
+    const d=document.createElement('div');
+    d.className='epc'+(isOn?' on':'')+(isDone?' watched':'');
+    const thumbHtml=ep.thumb
+      ?`<img src="${ep.thumb}" alt="EP${i+1}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=ep-thumb-ph>${i+1}</div>'">`
+      :`<div class="ep-thumb-ph">${i+1}</div>`;
+    d.innerHTML=`
+      <div class="epc-top-bar"></div>
+      <div class="ep-thumb">
+        ${thumbHtml}
+        <div class="ep-num-lbl">EP ${i+1}</div>
+        <div class="ep-watched-dot"></div>
+        <div class="ep-play-ov"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+      </div>
+      <div class="ep-info">
+        <div class="ep-info-num">EP ${i+1}</div>
+        <div class="ep-info-title">${ep.title||'Episode '+( i+1)}</div>
+      </div>`;
+    d.onclick=()=>switchEp(i);
+    g.appendChild(d);
+  });
+}
+
+function updateTopUI(){
+  if(!CONFIG) return;
+  const eps=CONFIG.seasons[ST.season]?.episodes||[];
+  document.getElementById('tbTitle').textContent=CONFIG.title;
+  document.getElementById('tbSub').textContent=`Season ${ST.season+1}  •  Episode ${ST.ep+1}`;
+  document.getElementById('epNavNum').textContent=`EP ${ST.ep+1}`;
+  document.title=`${CONFIG.title} S${ST.season+1}E${ST.ep+1} — AniHub`;
+
+  document.getElementById('prevBtn').disabled=ST.ep<=0;
+  document.getElementById('nextBtn').disabled=ST.ep>=eps.length-1;
+
+  document.getElementById('infoTitle').textContent=CONFIG.title;
+  document.getElementById('infoPoster').src=CONFIG.poster||'https://picsum.photos/id/104/300/450';
+
+  document.getElementById('badgeRow').innerHTML=`
+    <div class="bdg bdg-ep">S${ST.season+1} EP ${ST.ep+1}</div>
+    <div class="bdg bdg-q">HD</div>
+    <div class="bdg bdg-rat"><i class="fas fa-star"></i> ${CONFIG.rating||'—'}</div>
+    <div class="bdg bdg-genre">${CONFIG.genre||'—'}</div>
+    <div class="bdg bdg-lang">🇯🇵 Japanese</div>`;
+
+  // desc
+  const descEl=document.getElementById('infoDesc');
+  const rmBtn =document.getElementById('readMoreBtn');
+  if(CONFIG.desc){
+    descEl.textContent=CONFIG.desc;
+    descEl.style.display='block';
+    rmBtn.style.display='inline-block';
+  } else {
+    descEl.style.display='none';
+    rmBtn.style.display='none';
+  }
+
+  const isLast=ST.ep>=eps.length-1&&ST.season>=CONFIG.seasons.length-1;
+  document.getElementById('nextEpBtn').style.display=isLast?'none':'flex';
+
+  document.querySelectorAll('.pill').forEach((p,i)=>p.classList.toggle('on',i===ST.srv));
+
+  // Firebase stats increment
+  incrementStat('totalViews');
+  saveContinueWatching();
+}
+
+function toggleDesc(){
+  ST.descOpen=!ST.descOpen;
+  const el=document.getElementById('infoDesc');
+  const btn=document.getElementById('readMoreBtn');
+  el.classList.toggle('open',ST.descOpen);
+  btn.textContent=ST.descOpen?'Show less ▴':'Read more ▾';
+}
+
+/* ══════════════════════════════════════════
+   SWITCH — Ad দেখিয়ে episode load
+══════════════════════════════════════════ */
+function switchServer(i){
+  if(i===ST.srv) return;
+  ST.srv=i;
+  toast(`📡 ${CONFIG.servers[i].name} সিলেক্ট হয়েছে`);
+  const url=CONFIG.seasons[ST.season]?.episodes[ST.ep]?.stream||'';
+  loadStream(url);
+  buildServers();
+}
+
+function switchSeason(i){
+  if(i===ST.season) return;
+  window.open(CONFIG.adLink,'_blank');
+  markWatched();
+  ST.season=i; ST.ep=0;
+  buildSeasonTabs(); buildEpGrid(); updateTopUI();
+  const url=CONFIG.seasons[i]?.episodes[0]?.stream||'';
+  loadStream(url);
+  toast('📺 '+CONFIG.seasons[i].name+' চালু হচ্ছে...');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function switchEp(i){
+  window.open(CONFIG.adLink,'_blank');
+  markWatched();
+  ST.ep=i;
+  buildEpGrid(); updateTopUI();
+  const url=CONFIG.seasons[ST.season]?.episodes[i]?.stream||'';
+  loadStream(url);
+  toast('▶ EP '+(i+1)+' — '+(CONFIG.seasons[ST.season]?.episodes[i]?.title||''));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function stepEp(dir){
+  const eps=CONFIG.seasons[ST.season]?.episodes||[];
+  const next=ST.ep+dir;
+  if(next<0||next>=eps.length) return;
+  switchEp(next);
+}
+
+function onNextEp(){
+  const eps=CONFIG.seasons[ST.season]?.episodes||[];
+  if(ST.ep<eps.length-1){ switchEp(ST.ep+1); }
+  else if(ST.season<CONFIG.seasons.length-1){ switchSeason(ST.season+1); }
+  else{ toast('✅ সব episodes শেষ হয়েছে!'); }
+}
+
+function markWatched(){
+  const watched=S.get('watched_'+CONFIG.title,[]);
+  const key=`${ST.season}-${ST.ep}`;
+  if(!watched.includes(key)) watched.push(key);
+  S.set('watched_'+CONFIG.title,watched);
+}
+
+/* ══════════════════════════════════════════
+   SAVE CONTINUE WATCHING
+══════════════════════════════════════════ */
+function saveContinueWatching(){
+  if(!CONFIG) return;
+  const cw=S.get('continueW',[]);
+  const idx=cw.findIndex(c=>c.title===CONFIG.title);
+  const entry={
+    title:CONFIG.title, season:ST.season+1, ep:ST.ep+1,
+    progress:Math.floor(Math.random()*55)+20,
+    type:QS_TYPE, key:QS_KEY||CONFIG.key||'',
+    ts:Date.now()
+  };
+  if(idx>-1) cw.splice(idx,1);
+  cw.unshift(entry);
+  if(cw.length>12) cw.pop();
+  S.set('continueW',cw);
+}
+
+/* ══════════════════════════════════════════
+   FIREBASE STATS
+══════════════════════════════════════════ */
+function incrementStat(field){
+  if(!db) return;
+  db.ref('stats/'+field).transaction(v=>(v||0)+1).catch(()=>{});
+}
+
+/* ══════════════════════════════════════════
+   LIKE / WATCHLIST
+══════════════════════════════════════════ */
+function toggleLike(){
+  ST.liked=!ST.liked;
+  const likes=S.get('likes',[]);
+  if(ST.liked){ if(!likes.includes(CONFIG.title)) likes.push(CONFIG.title); toast('❤️ Liked!'); }
+  else{ const i=likes.indexOf(CONFIG.title); if(i>-1) likes.splice(i,1); toast('💔 Unlike করা হয়েছে'); }
+  S.set('likes',likes); refreshLikeUI();
+}
+function refreshLikeUI(){
+  const b=document.getElementById('likeBtn');
+  b.classList.toggle('liked',ST.liked);
+  b.innerHTML=`<i class="${ST.liked?'fas':'far'} fa-heart"></i>`;
+}
+
+function toggleWL(){
+  ST.inWL=!ST.inWL;
+  let wl=S.get('watchlist',[]);
+  if(ST.inWL){
+    wl.unshift({
+      title:CONFIG.title, genre:CONFIG.genre, rating:CONFIG.rating,
+      badge:'top', ep:ST.ep+1, type:QS_TYPE, key:QS_KEY||CONFIG.key||''
+    });
+    toast('✅ Watchlist এ যোগ হয়েছে!');
+  } else {
+    wl=wl.filter(w=>w.title!==CONFIG.title);
+    toast('❌ Watchlist থেকে সরানো হয়েছে');
+  }
+  S.set('watchlist',wl); refreshWLUI();
+}
+function refreshWLUI(){
+  const b=document.getElementById('wlBtn');
+  b.classList.toggle('saved',ST.inWL);
+  b.innerHTML=`<i class="fas ${ST.inWL?'fa-bookmark':'fa-plus'}"></i>`;
+}
+
+function restoreStates(){
+  const likes=S.get('likes',[]);
+  const wl   =S.get('watchlist',[]);
+  ST.liked =likes.includes(CONFIG.title);
+  ST.inWL  =wl.some(w=>w.title===CONFIG.title);
+  refreshLikeUI(); refreshWLUI();
+}
+
+/* ══════════════════════════════════════════
+   DOWNLOAD
+══════════════════════════════════════════ */
+function updateDlUI(){
+  const n=ST.adsWatched, req=CONFIG?.adsRequired||ADS_REQUIRED;
+  for(let i=1;i<=5;i++){
+    const d=document.getElementById('d'+i);
+    if(d){ d.classList.toggle('on',i<=n&&n<req); d.classList.toggle('done',n>=req); }
+  }
+  const btn=document.getElementById('dlBtn');
+  const txt=document.getElementById('dlBtnText');
+  const note=document.getElementById('dlNote');
+  const unlbl=document.getElementById('dlUnlockLbl');
+  if(n>=req){
+    btn.classList.add('unlocked');
+    btn.querySelector('i').className='fas fa-download';
+    txt.textContent=`ডাউনলোড করুন (${ST.quality})`;
+    note.textContent='ডাউনলোড আনলক হয়েছে ✓';
+    note.style.color='#10B981';
+    unlbl.classList.add('show');
+  } else {
+    btn.classList.remove('unlocked');
+    btn.querySelector('i').className='fas fa-lock';
+    txt.textContent=`Download (${n}/${req} বিজ্ঞাপন দেখা হয়েছে)`;
+    note.textContent=`আরও ${req-n}টি বিজ্ঞাপন দেখুন`;
+    note.style.color='';
+    unlbl.classList.remove('show');
+  }
+}
+document.getElementById('dlBtn').onclick=()=>{
+  const req=CONFIG?.adsRequired||ADS_REQUIRED;
+  if(ST.adsWatched<req){
+    ST.adsWatched++;
+    window.open(AD_URL,'_blank');
+    updateDlUI();
+    incrementStat('totalAds');
+    toast(`বিজ্ঞাপন ${ST.adsWatched}/${req} দেখা হয়েছে`);
+  } else {
+    const ep=CONFIG?.seasons[ST.season]?.episodes[ST.ep];
+    const url=ep?.dl?.[ST.quality]||ep?.download?.[ST.quality];
+    if(url&&url!=='#'){ window.open(url,'_blank'); toast('⬇ ডাউনলোড শুরু হচ্ছে ('+ST.quality+')'); incrementStat('totalDl'); }
+    else{ toast('⚠️ এই কোয়ালিটির লিঙ্ক পাওয়া যায়নি'); }
+  }
+};
+document.getElementById('dlGrid').onclick=e=>{
+  const b=e.target.closest('.dl-q'); if(!b) return;
+  document.querySelectorAll('.dl-q').forEach(q=>q.classList.remove('sel'));
+  b.classList.add('sel');
+  ST.quality=b.dataset.q;
+  updateDlUI();
+};
+
+/* ══════════════════════════════════════════
+   SHARE
+══════════════════════════════════════════ */
+function openShare(){ document.getElementById('shareUrl').textContent=location.href; document.getElementById('shareModal').classList.add('show'); }
+function closeShare(){ document.getElementById('shareModal').classList.remove('show'); }
+function shareVia(type){
+  const url=encodeURIComponent(location.href);
+  const txt=encodeURIComponent(`${CONFIG?.title||QS_TITLE} S${ST.season+1}E${ST.ep+1} দেখছি AniHub এ! 🎬`);
+  const links={ whatsapp:`https://wa.me/?text=${txt}%20${url}`, facebook:`https://www.facebook.com/sharer/sharer.php?u=${url}`, telegram:`https://t.me/share/url?url=${url}&text=${txt}`, twitter:`https://twitter.com/intent/tweet?text=${txt}&url=${url}` };
+  if(type==='copy'){ navigator.clipboard?.writeText(decodeURIComponent(url)).then(()=>toast('🔗 লিঙ্ক কপি হয়েছে!')); closeShare(); return; }
+  if(type==='native'&&navigator.share){ navigator.share({title:CONFIG?.title,text:decodeURIComponent(txt),url:decodeURIComponent(url)}).catch(()=>{}); closeShare(); return; }
+  if(links[type]){ window.open(links[type],'_blank'); closeShare(); }
+}
+
+/* ══════════════════════════════════════════
+   COMMENTS
+══════════════════════════════════════════ */
+let COMMENTS=[
+  {av:'🦊',name:'AnimeFan99',  time:'2 min ago',  text:'এই episode টা একদম অসাধারণ ছিল! Animation এর মান অন্য level এ 🔥',likes:42,liked:false},
+  {av:'⚔️',name:'SwordMaster', time:'15 min ago', text:'Episode 1 থেকেই এই moment এর জন্য অপেক্ষা করছিলাম। Worth it!',likes:28,liked:false},
+  {av:'🌙',name:'MoonWatcher', time:'1 hour ago', text:'এই scene এর OST শুনে গায়ে কাঁটা দিল।',likes:61,liked:false},
+  {av:'🔥',name:'FireFist_Lee', time:'Yesterday', text:'সিজনের সেরা episode! পরের সপ্তাহের জন্য অপেক্ষা!',likes:89,liked:false},
+];
+function buildComments(){
+  document.getElementById('cCount').textContent=`(${COMMENTS.length})`;
+  document.getElementById('cList').innerHTML=COMMENTS.map((c,i)=>`
+    <div class="citem">
+      <div class="cav">${c.av}</div>
+      <div class="cbody">
+        <div class="cname">${c.name}<time>${c.time}</time></div>
+        <div class="ctext">${c.text}</div>
+        <div class="cacts">
+          <div class="cact ${c.liked?'liked':''}" onclick="likeComment(${i})"><i class="${c.liked?'fas':'far'} fa-heart"></i> ${c.likes}</div>
+          <div class="cact" onclick="replyTo('${c.name.replace(/'/g,"\\'")}')"><i class="far fa-comment"></i> Reply</div>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function likeComment(i){ COMMENTS[i].liked=!COMMENTS[i].liked; COMMENTS[i].likes+=COMMENTS[i].liked?1:-1; buildComments(); }
+function replyTo(name){ const inp=document.getElementById('cInput'); inp.value=`@${name} `; inp.focus(); document.getElementById('cSendBtn').style.display='block'; }
+function postComment(){
+  const inp=document.getElementById('cInput'); const txt=inp.value.trim(); if(!txt){toast('⚠️ কিছু লিখুন');return;}
+  const avs=['😊','🦊','⚔️','🌙','🎮','🔥','⭐','🎭'];
+  COMMENTS.unshift({av:avs[Math.floor(Math.random()*avs.length)],name:S.get('profileName','AniHub User'),time:'এইমাত্র',text:txt,likes:0,liked:false});
+  inp.value=''; inp.style.height='auto'; document.getElementById('cSendBtn').style.display='none';
+  buildComments(); toast('💬 মন্তব্য পোস্ট হয়েছে!');
+}
+function setupCommentInput(){
+  const inp=document.getElementById('cInput'); const btn=document.getElementById('cSendBtn');
+  const av=document.getElementById('myAvEl'); if(av) av.textContent=S.get('profileAvatar','😊');
+  if(!inp||!btn) return;
+  inp.addEventListener('focus',()=>btn.style.display='block');
+  inp.addEventListener('blur',()=>{ setTimeout(()=>{ if(!inp.value.trim()) btn.style.display='none'; },250); });
+  inp.addEventListener('input',()=>{ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,110)+'px'; btn.style.display=inp.value.trim()?'block':'none'; });
+}
+
+/* ══════════════════════════════════════════
+   FULLSCREEN / ORIENTATION
+══════════════════════════════════════════ */
+plyr.on('enterfullscreen',()=>{ try{ screen.orientation?.lock?.('landscape').catch(()=>{}); }catch(e){} });
+plyr.on('exitfullscreen',()=>{ try{ screen.orientation?.unlock?.(); }catch(e){} });
+window.addEventListener('orientationchange',()=>{
+  const a=screen.orientation?screen.orientation.angle:window.orientation;
+  if(a===90||a===-90||a===270){ if(!plyr.fullscreen.active) plyr.fullscreen.enter(); }
+  else{ if(plyr.fullscreen.active) plyr.fullscreen.exit(); }
+});
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='TEXTAREA'||e.target.tagName==='INPUT') return;
+  if(e.key==='ArrowRight') stepEp(1);
+  if(e.key==='ArrowLeft')  stepEp(-1);
+  if(e.key==='f'||e.key==='F') plyr.fullscreen.toggle();
+});
+
+/* ══════════════════════════════════════════
+   MAIN INIT
+══════════════════════════════════════════ */
+async function init(){
+  const loader=document.getElementById('initLoader');
+  const initMsg=document.getElementById('initMsg');
+
+  try {
+    initMsg.textContent='Ad config লোড হচ্ছে...';
+    await loadAdConfig();
+
+    initMsg.textContent='Content লোড হচ্ছে Firebase থেকে...';
+    await loadContentFromFirebase();
+
+    if(!CONFIG){
+      // Firebase এ data নেই — fallback with empty
+      loader.style.display='none';
+      document.getElementById('infoTitle').textContent = QS_TITLE||'Content Not Found';
+      document.getElementById('tbTitle').textContent   = QS_TITLE||'Not Found';
+      document.getElementById('epGrid').innerHTML=`
+        <div style="grid-column:1/-1;text-align:center;padding:40px 20px;color:var(--muted)">
+          <i class="fas fa-exclamation-triangle" style="font-size:36px;color:rgba(239,68,68,.4);margin-bottom:12px;display:block"></i>
+          <b style="color:var(--text)">Content পাওয়া যায়নি</b><br>
+          Admin Panel থেকে এই content এর data যোগ করুন।<br><br>
+          <a href="index.html" style="color:var(--p);font-weight:600;">← Back to Home</a>
+        </div>`;
+      document.getElementById('ldOverlay').classList.add('off');
+      buildComments(); setupCommentInput();
+      return;
+    }
+
+    // সব ঠিক আছে
+    loader.style.display='none';
+    buildAll();
+    buildComments();
+    setupCommentInput();
+
+  } catch(err) {
+    console.error('Init error:', err);
+    loader.style.display='none';
+    toast('⚠️ Data লোড করতে সমস্যা হয়েছে। Refresh করুন।');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>
